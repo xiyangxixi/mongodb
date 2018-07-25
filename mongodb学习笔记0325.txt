@@ -1,0 +1,1075 @@
+﻿1、$set修改器入门
+“$set“ 用来指定一个键的值，如果这个键不存在，就创建它。对更新模式或者增加用户定义键非常方便。
+
+> db.amei.find().pretty()
+{
+	"_id" : ObjectId("5aad0c71bd6410602d1fb0f6"),
+	"url" : "www.baidu.com",
+	"pageview" : 30
+}
+如果想要添加喜欢的书进去，则可以使用"$set".执行以下语句
+
+> db.amei.update({"url":"www.baidu.com"},{"$set":{"favorite book":"DBA"}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+
+查看结果
+> db.amei.find().pretty()
+{
+	"_id" : ObjectId("5aad0c71bd6410602d1fb0f6"),
+	"url" : "www.baidu.com",
+	"pageview" : 30,
+	"favorite book" : "DBA"
+}
+
+如果用户喜欢的是另外一本书，“$set”再次可以使用，执行以下语句
+
+> db.amei.update({"url":"www.baidu.com"},{"$set":{"favorite book":"DBA IS A GOOD WORK"}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+
+查看结果
+> db.amei.find().pretty()
+{
+	"_id" : ObjectId("5aad0c71bd6410602d1fb0f6"),
+	"url" : "www.baidu.com",
+	"pageview" : 30,
+	"favorite book" : "DBA IS A GOOD WORK"
+}
+加入喜欢的书是数组，执行以下语句，
+
+> db.amei.update({"url":"www.baidu.com"},{"$set":{"favorite book":["DBA IS A GOOD WORK","DBA","mysql DBA","oracle DBA"]}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+
+查看结果
+> db.amei.find().pretty()
+{
+	"_id" : ObjectId("5aad0c71bd6410602d1fb0f6"),
+	"url" : "www.baidu.com",
+	"pageview" : 30,
+	"favorite book" : [
+		"DBA IS A GOOD WORK",
+		"DBA",
+		"mysql DBA",
+		"oracle DBA"
+	]
+}
+
+如果用户发现自己不喜欢读书，执行以下语句
+> db.amei.update({"url":"www.baidu.com"},{"$unset":{"favorite book":1}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+
+查看结果
+> db.amei.find().pretty()
+{
+	"_id" : ObjectId("5aad0c71bd6410602d1fb0f6"),
+	"url" : "www.baidu.com",
+	"pageview" : 30
+}
+
+$set修改内嵌文档，执行以下语句添加内嵌文档
+
+> db.amei.update({"url":"www.baidu.com"},{"$set":{"favorite book":{"name":"DBA","age":14,"hunyin":"weihun"}}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+查看结果
+> db.amei.find().pretty()
+{
+	"_id" : ObjectId("5aad0c71bd6410602d1fb0f6"),
+	"url" : "www.baidu.com",
+	"pageview" : 30,
+	"favorite book" : {
+		"name" : "DBA",
+		"age" : 14,
+		"hunyin" : "weihun"
+	}
+}
+修改内嵌文档，执行以下语句
+
+> db.amei.update({"url":"www.baidu.com"},{"$set":{"favorite book.name":"oracle DBA"}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+
+查看结果
+> db.amei.find().pretty()
+{
+	"_id" : ObjectId("5aad0c71bd6410602d1fb0f6"),
+	"url" : "www.baidu.com",
+	"pageview" : 30,
+	"favorite book" : {
+		"name" : "oracle DBA",
+		"age" : 14,
+		"hunyin" : "weihun"
+	}
+}
+
+
+2、$inc修改器用来增加已有的键，或者在键不存在的时候创建一个键，对于分析数据、因果关系、
+投票或者其他有变化数值的地方，使用会很方便。如以下游戏，击中球可得50分
+
+> db.games.insert({"game":"pinball","user":"huazai"})
+WriteResult({ "nInserted" : 1 })
+> db.games.update({"game":"pinball","user":"huazai"},{"$inc":{"score":50}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+
+查看结果
+
+> db.games.findOne()
+{
+	"_id" : ObjectId("5aad1249bd6410602d1fb0f7"),
+	"game" : "pinball",
+	"user" : "huazai",
+	"score" : 50
+}
+
+如果击中小球，要加1000分，执行以下语句，并查看结果
+> db.games.update({"game":"pinball","user":"huazai"},{"$inc":{"score":1000}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.games.findOne()
+{
+	"_id" : ObjectId("5aad1249bd6410602d1fb0f7"),
+	"game" : "pinball",
+	"user" : "huazai",
+	"score" : 1050
+}
+
+3、数组修改器。
+如果指定的键已经存在，$push会向已有的数据末尾加入一个元素，要是没有就会创建一个新的数组。
+> db.createCollection("blog")
+{ "ok" : 1 }
+> db.blog.insert({"title":"blog","content":"..."})
+WriteResult({ "nInserted" : 1 })
+> db.blog.find().pretty()
+{
+	"_id" : ObjectId("5aad1600bd6410602d1fb0f8"),
+	"title" : "blog",
+	"content" : "..."
+}
+向其中添加评论，执行以下语句并查询结果。
+> db.blog.update({"title":"blog"},{"$push":{"comments":{"name":"huazai","email":"286991486@qq.com","content":"nice post"}}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.blog.find().pretty()
+{
+	"_id" : ObjectId("5aad1600bd6410602d1fb0f8"),
+	"title" : "blog",
+	"content" : "...",
+	"comments" : [
+		{
+			"name" : "huazai",
+			"email" : "286991486@qq.com",
+			"content" : "nice post"
+		}
+	]
+}
+如果想接着评论，则接着push,执行以下语句并查看结果，
+> db.blog.update({"title":"blog"},{"$push":{"comments":{"name":"huahua","email":"1783341279@qq.com","content":"are you ready?"}}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.blog.find().pretty()
+{
+	"_id" : ObjectId("5aad1600bd6410602d1fb0f8"),
+	"title" : "blog",
+	"content" : "...",
+	"comments" : [
+		{
+			"name" : "huazai",
+			"email" : "286991486@qq.com",
+			"content" : "nice post"
+		},
+		{
+			"name" : "huahua",
+			"email" : "1783341279@qq.com",
+			"content" : "are you ready?"
+		}
+	]
+}
+
+如果有一个值不在数组里面就把它加进去，执行以下语句并查询结果。
+> db.blog.update({"authors cited":{"$ne":"richie"}},{"$push":{"authors cited":"richie"}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.blog.find().pretty()
+{
+	"_id" : ObjectId("5aad1600bd6410602d1fb0f8"),
+	"title" : "blog",
+	"content" : "...",
+	"comments" : [
+		{
+			"name" : "huazai",
+			"email" : "286991486@qq.com",
+			"content" : "nice post"
+		},
+		{
+			"name" : "huahua",
+			"email" : "1783341279@qq.com",
+			"content" : "are you ready?"
+		},
+		{
+			"name" : "zengwengong",
+			"email" : "568902434@qq.com",
+			"content" : "i am ready"
+		}
+	],
+	"datail" : [
+		{
+			"name" : "huazai",
+			"email" : "286991486@qq.com",
+			"content" : "nice post"
+		}
+	],
+	"games" : [
+		{
+			"name" : "huazai",
+			"email" : "286991486@qq.com",
+			"content" : "nice post"
+		}
+	],
+	"xiyangxixia" : [
+		{
+			"name" : "huazai",
+			"email" : "286991486@qq.com",
+			"content" : "nice post"
+		}
+	],
+	"authors cited" : [
+		"richie"
+	]
+}
+
+也可以用$addToset完成同样的事，要知道有些情况$ne根本行不通，有时候更适合。
+如一个表示用户的文档，已经有了电子邮件地址信息：
+
+> db.email.find().pretty()
+{
+	"_id" : ObjectId("5aad33c7bd6410602d1fb0f9"),
+	"username" : "huahua",
+	"email" : [
+		"286929434@qq.com",
+		"1384959345@qq.com",
+		"q54q45243@qq.com"
+	]
+}
+
+添加新地址时，用$addToSet可以避免重复，执行以下语句并查询语句
+> db.email.update({"_id" : ObjectId("5aad33c7bd6410602d1fb0f9")},{"$addToSet":{"email":"286991486@qq.com"}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.email.find().pretty()
+{
+	"_id" : ObjectId("5aad33c7bd6410602d1fb0f9"),
+	"username" : "huahua",
+	"email" : [
+		"286929434@qq.com",
+		"1384959345@qq.com",
+		"q54q45243@qq.com",
+		"286991486@qq.com"
+	]
+}
+
+4、$addToSet与$each，组合使用可以添加多个不同的值，而用$ne和$push组合就不能实现，如一次想要添加
+多个邮件地址
+> db.email.find().pretty()
+{
+	"_id" : ObjectId("5aad33c7bd6410602d1fb0f9"),
+	"username" : "huahua",
+	"email" : [
+		"286929434@qq.com",
+		"1384959345@qq.com",
+		"q54q45243@qq.com",
+		"286991486@qq.com"
+	]
+}
+执行以下语句并查看结果，
+
+> db.email.update({"_id" : ObjectId("5aadd8d6d0673fbb58964a79")},{"$addToSet":{"email":{"$each":["huahau@qq.com","qrqwe@qq.com"]}}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.email.find().pretty()
+{
+	"_id" : ObjectId("5aadd8d6d0673fbb58964a79"),
+	"username" : "huahua",
+	"email" : [
+		"286991486@qq.com",
+		"1783341279@qq.com",
+		"huahau@qq.com",
+		"qrqwe@qq.com"
+	]
+}
+
+从数组中删除元素的方法，将数组看成队列或者栈，可以用$pop修改器从数组的任何一段删除元素，
+{$pop:{key:1}},从数组末尾删除一个元素；{$pop:{key:-1}},从头部删除一个元素，有时需要基于
+特定条件来删除元素，而不仅仅是依据位置，$pull可以做到。
+
+> db.lists.insert({"todo":["dishes","lunch","dry clean floor"]})
+WriteResult({ "nInserted" : 1 })
+> db.lists.find().pretty()
+{
+	"_id" : ObjectId("5aaddaabd0673fbb58964a7a"),
+	"todo" : [
+		"dishes",
+		"lunch",
+		"dry clean floor"
+	]
+}
+如果想要把“lunch”放在首位，则可以从列表中删除
+执行以下语句并查询结果。
+> db.lists.update({},{"$pull":{"todo":"dishes"}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.lists.find().pretty()
+{
+	"_id" : ObjectId("5aaddaabd0673fbb58964a7a"),
+	"todo" : [
+		"lunch",
+		"dry clean floor"
+	]
+}
+$pull会将所有匹配的部分删掉，对数组[1,2,1,1,1]执行pull 1，得到结果是只有一个元素的数组[2]
+
+5、数组的定位修改器
+若是数组有多个值，而我们只想对其中的一部分进行操作，数组都是从0开头的，可以将下标直接作为键
+来删除选择元素。
+
+> db.blog.find().pretty()
+{
+	"_id" : ObjectId("5aad1600bd6410602d1fb0f8"),
+	"title" : "blog",
+	"content" : "...",
+	"comments" : [
+		{
+			"name" : "huazai",
+			"email" : "286991486@qq.com",
+			"content" : "nice post"
+		},
+		{
+			"name" : "huahua",
+			"email" : "1783341279@qq.com",
+			"content" : "are you ready?"
+		},
+		{
+			"name" : "zengwengong",
+			"email" : "568902434@qq.com",
+			"content" : "i am ready"
+		}
+	],
+	"datail" : [
+		{
+			"name" : "huazai",
+			"email" : "286991486@qq.com",
+			"content" : "nice post"
+		}
+	],
+	"games" : [
+		{
+			"name" : "huazai",
+			"email" : "286991486@qq.com",
+			"content" : "nice post"
+		}
+	],
+	"xiyangxixia" : [
+		{
+			"name" : "huazai",
+			"email" : "286991486@qq.com",
+			"content" : "nice post"
+		}
+	],
+	"authors cited" : [
+		"richie"
+	]
+}
+
+但是有时候不知道数组的下标，则可以使用$,执行以下语句并查询结果
+> db.blog.update({"comments.name":"huazai"},{"$set":{"comments.$.name":"meimei"}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.blog.find().pretty()
+{
+	"_id" : ObjectId("5aad1600bd6410602d1fb0f8"),
+	"title" : "blog",
+	"content" : "...",
+	"comments" : [
+		{
+			"name" : "meimei",
+			"email" : "286991486@qq.com",
+			"content" : "nice post"
+		},
+		{
+			"name" : "huahua",
+			"email" : "1783341279@qq.com",
+			"content" : "are you ready?"
+		},
+		{
+			"name" : "zengwengong",
+			"email" : "568902434@qq.com",
+			"content" : "i am ready"
+		}
+	],
+	"datail" : [
+		{
+			"name" : "huazai",
+			"email" : "286991486@qq.com",
+			"content" : "nice post"
+		}
+	],
+	"games" : [
+		{
+			"name" : "huazai",
+			"email" : "286991486@qq.com",
+			"content" : "nice post"
+		}
+	],
+	"xiyangxixia" : [
+		{
+			"name" : "huazai",
+			"email" : "286991486@qq.com",
+			"content" : "nice post"
+		}
+	],
+	"authors cited" : [
+		"richie"
+	]
+}
+
+6、修改器速度
+
+哟肚饿修改器运行比较快。$inc就比较快，因为不会改变文档大小，只是修改值。
+而数组修改器可能更改了文档的大小，就会慢一些，$set能在文档大小不发生变化时立即
+修改，否则性能也会有所下降。mongodb预留了些补白给文档，来适应大小变化，但是如果超出了
+原来的空间，最后还是会分配一块新的空间。空间分配除了会减慢速度，同时会随着数组变长，
+mongodb会需要更长的时间来遍历整个数组，对每个数组的修改也会慢下来。
+
+7、upsert
+
+upsert是一种特殊的额更新，要是没有文档符合更新条件，就会以这个条件和更新文档为基础
+创建一个新的文档。如果找到了匹配的文档，则正常更新，upsert非常方便，补习预置集合，
+同一套代码可以既创建又更新文档。
+db.math.remove()
+db.matb.update({"count":25},{"$inc":{"count":3}},true)
+db.math.findOne()
+{
+	"_id":ObjectId("daoftqv0nsdvq0teg"),
+	"count":28
+}
+
+先是remove清空了集合里面就没有了文档了，upsert创建一个键为“count”的值为25的文档，
+随后将这个值加3，最后得到“count”为28的文档。要是不开启upsert，{"count":25}不会匹配
+到任何文档，也就没有任何更改。
+如果将upsert再次运行，还会创建一个文档。因为没有文档满足匹配条件。
+
+save是一个shell函数，可以在文档存在时更新，不存在时插入，只有一个参数：文档。
+要是这个文档含有“_id”，save会调用upsert，否则，会调用插入。
+var x=db.foo.findOne()
+x.nun=42
+db.foo.save(x)
+
+8、更新多个文档
+默认情况下，更新只能对匹配条件的第一个文档执行更新。要是有多个符合条件的文档，
+其余的文档就没有变化。要使所有匹配到的文档都得到更新，可以设置update的第四个参数
+为true。建议每次都显示表明要不要多多文档更新，这样不但明确了update的行为，还可以在默认
+参数发生变化时从容应对。
+多文档更新对模式迁移非常有用，还可以对特定用户发布新功能的时候使用。
+db.users.update({"birthday":"10/13/1978"},{"$set":{"gift":"happy birthday!"}},false,true)
+想知道多文档更新到底更新了多少文档，可以运行getLastError命令或者说getLastOpStatus，
+n即为更新了多少文档。
+
+9、返回已更新的文档
+getLastError仅能获得有限的信息，并不能返回已更新的文档，可以通过findAndModify命令来做到
+但是其有点慢，因为它要等待数据库的响应。
+
+findAndModify既可以update也可以remove
+findAndModify命令中每个键对应的值如下所示，
+findAndModify：字符串，集合名
+query：查询文档，用来检索文档的条件
+sort:排序结果的条件
+update:修改器文档，对所找到的文档执行更新
+remove:布尔类型，表示是否删除文档
+new：布尔类型，表示是否删除文档
+update和remove必须有一个，也只能有一个。要是匹配不到文档，就会返回一个错误。
+
+10、查询
+	find查询
+	1、指定返回的键，1为返回，0位不返回，如下
+	> db.amei.find({},{"favorite book":0}).pretty()
+{
+	"_id" : ObjectId("5aad0c71bd6410602d1fb0f6"),
+	"url" : "www.baidu.com",
+	"pageview" : 30
+}
+	2、查询条件
+比较操作符：$lt $lte $gt $gte $ne,如
+start=new Date("01/01/2018")
+db.users.find({"registered":{"$lt":start}})
+	
+	3、OR查询
+Mongodb有几种OR查询：$or $inc $nin,如
+db.test.find({"number":{"$in":[123,456,789]}})
+db.test.find({"user_id":{"$in":[123456,"joe"]}})
+db.test.find({"number":{"$nin":[123,456,789]}})
+db.test.find({"or":[{"number":14},{"winner":true}]})
+db.test.find({"$or":[{"number":{"$in":[123,456,789]}},{"name":"huahua"}]})
+	$not
+db.test.find({"id_num":{"$mod":[5,1]}})会返回1、6、11、16等
+如果要返回2 3 4 5 7 8 9 则需要使用$not,如下
+db.test.find("id_num":{"$not":{"$mod":[5,1]}})
+11、特定类型的查询
+	null
+null不仅仅匹配自身，而且匹配不存在的。所以既要检查改键的值是否为null，还要通过
+$exists判断键值是否已经存在。
+db.test.find({"z":{"$in":[null],"$exists":true}})
+	正则表达式
+查找名为JOe或者joe的用户，就可以使用正则表达式忽略大小写的匹配
+db.test.find({"name":/joe/i}),有时候可能是joey,joeu，如下查询
+db.test.find({"name":/joe?/i}),有时候需要查询joe开头的名字，可如下，其为
+前缀型正则表达式查询创建索引
+db.test.find({"name":/^joe?/i})
+	查询数组
+大多数数组可以这么理解，每一个元素都是整个键的值，如果是一个水果清单，可以用一下查询
+> db.food.insert({"name":["apple","banana","peach"]})
+WriteResult({ "nInserted" : 1 })
+> db.food.find().pretty()
+{
+	"_id" : ObjectId("5aae7936d0673fbb58964a7c"),
+	"name" : [
+		"apple",
+		"banana",
+		"peach"
+	]
+}
+> db.food.find({"name":"apple"})
+{ "_id" : ObjectId("5aae7936d0673fbb58964a7c"), "name" : [ "apple", "banana", "peach" ] }
+> db.food.find({"name":"apple"}).pretty()
+{
+	"_id" : ObjectId("5aae7936d0673fbb58964a7c"),
+	"name" : [
+		"apple",
+		"banana",
+		"peach"
+	]
+}
+
+	$all
+	
+如果需要通过多个元素来匹配数组，就需要使用$all了。这样子会匹配一组元素
+
+> db.food.find().pretty()
+{
+	"_id" : ObjectId("5aae7936d0673fbb58964a7c"),
+	"name" : [
+		"apple",
+		"banana",
+		"peach"
+	]
+}
+{
+	"_id" : ObjectId("5aae7a02d0673fbb58964a7d"),
+	"name" : [
+		"apple",
+		"peach",
+		"water"
+	]
+}
+{
+	"_id" : ObjectId("5aae7a16d0673fbb58964a7e"),
+	"name" : [
+		"lajiao",
+		"weijing",
+		"jiangyou"
+	]
+}
+如果需要查出同时带有lajiao和weijing的文档，执行以下语句并查询结果
+
+> db.food.find({"name":{"$all":["weijing","lajiao"]}}).pretty()
+{
+	"_id" : ObjectId("5aae7a16d0673fbb58964a7e"),
+	"name" : [
+		"lajiao",
+		"weijing",
+		"jiangyou"
+	]
+}
+也可以使用数组下标来查询
+> db.food.find({"name.1":"weijing"}).pretty()
+{
+	"_id" : ObjectId("5aae7a16d0673fbb58964a7e"),
+	"name" : [
+		"lajiao",
+		"weijing",
+		"jiangyou"
+	]
+}
+	$size
+可以查询指定长度的数组，如下
+db.test.find({"name":{"size":3}})
+db.test.update({"$push":{"name":"huahua"}})会变成下面这样子
+db.test.update({"$push":{"name":"huahua"},"$inc":{"size":1}})
+如果是上面这样，查询就可以像下面这样查询
+db.test.find({"$size":{"$gt":3}})
+	$slice 分割
+$slice返回数组的一个子集合
+如果一个博客文章的评论，要想返回前10条评论，可以向下面这样
+db.test.find(criteria,{"comments":{"$slice":10}})
+如果想要返回最后10条评论，则可以向下面这样
+db.test.fin的(criteria,{"comments":{"$slice":-10}})
+$slice也可以接受偏移值和要返回的元素数量，来返回中间的结果
+db.test.find(criteria,{"comments":{"$slice":[23,10]}})
+以上会返回跳过前23个元素，返回接下来的10个元素，如果不够，就返回接下来的元素
+
+查询内嵌文档
+两种方法：查询整个文档，或者只针对其键/值对进行查询
+	点表示法
+db.test.find({"name.first":"JOe","name.last":"Schmoe"}),这样即使键改变也会查询到姓和名
+
+db.test.find({"comments.author":"joe","comments.score":{"$gte":5}})这种是不行的，
+$elemMatch可以将限定条件分组，仅当需要对一个内嵌文档的多个键操作时才会用到
+db.test.find({"comments":{"$elemMatch":{"author":"joe","score":{"$gte":5}}}})这样才能
+查到作者为joe且其评论在5分以上的博客。
+
+	$where查询
+$where借助JavaScript来完成查询，如果不是必要时候，要避免使用$where，因为在速度上比较慢
+并且不可以使用索引
+
+	游标
+数据库使用游标来返回find的执行结果。客户端对游标的实现通常能够对最终结果进行有效的控制，
+可以限制结果的数量，略过部分结果，根据任意方向任意键的组合对结果进行各种排序，或者是执行
+一些功能强大的曹组。
+
+> for(i=0;i<100;i++){ db.cursor.insert({y:i})}
+WriteResult({ "nInserted" : 1 })
+
+limit、skip类似，limit是上限，sort是排序，1为升序，-1为降序，如果指定了多个键，则按照多个键
+顺序排序。如
+db.test.find({"desc":"mp3"}).limit(50).sort({"price":-1})
+
+db.test.find().sort({username:1,age:-1})
+db.test.find({"desc":"mp3"}).limit(5).sort({"price":-1})
+
+mongodb处理不同类型的数据是有一个顺序的，有时候一个键的值可能是多种类的，从小到大，顺序如下：
+最小值 null 数字（整形、长整型、双精度）、字符串、对象/文档、数组、二进制数据
+对象ID、布尔型、日期型、时间戳、正则表达式、最大值
+
+	不用skip对结果分页
+var page1=db.test.find().limit(100)
+var page2=db.test.find().skip(100).limit(100)
+var page3=db.test.find().skip(200).limit(100)
+
+var page1=db.test.find().sort({"date":-1}).limit(100)
+var latest=null;
+// display first page
+while(page1.hasNext()){
+latest=page1.next();
+display(latest);
+}
+// get next page
+var page2=db.test.find({"date":{"$gt":latest.date}});
+page2.sort({"date":-1}).limit(100);
+	随机选取文档
+从集合里面随机挑选一个文档算是常见问题
+Math.random()产生一个0~1的随机数
+db.test.insert({"name":"huahua","random":Math.random()})
+db.test.insert({"name":"zaizai","random":Math.random()})
+db.test.insert({"name":"meimei","random":Math.random()})
+这样，想要从集合中查找一个随机文档，只要计算个随机数并将其作为查询条件就好了，完全
+不用skip，如
+var random=Math.random()
+result=db.test.find("random":{"$gt":random}),如果遇到随机数比所有集合里面存着的随机数大，就换一个方向就好了。
+如果集合里面没有文档，就会返回null。
+可以添加索引进行查找
+db.test.ensureIndex({"profession":1,"state":1,"random":1})
+	高级查询选项
+查询分为包装的和普通的两种
+
+二、索引
+	索引就是用来加速查询的
+1、简介
+	当查询中仅适用一个键时，可以对该键建立索引，以提高查询速度。
+db.test.ensureIndex({"username":1})
+对于同一个集合，同样的索引只需要创建一次，反复创建徒劳无功，麻烦。
+对某个键创建的索引会加速该键的查询，对于其他查询没有帮助。
+避免让服务器做全表扫描。
+实践证明，一定要创建查询中用到的所有键的索引。
+创建索引的缺点是每次插入、更新和删除时会产生额外的开销。因为数据库不但要执行这些操作，
+还要将这些操作在集合的索引中标记。因此，要尽可能的少创建索引，每个集合的最大索引个数为64个。
+一定不要索引每一个键，这回导致插入非常慢，还会占用很多空间，对查询速度也没啥提升。
+如果需要查询返回结合中一半以上的结果，使用全表扫描比索引高效。
+1、1扩展索引
+	简历索引时应该考虑的问题
+	1、会做什么样的索引？其中哪些键需要索引？
+	2、每个键的索引方向是怎样的？
+	3、如何应对扩展？有咩有种不同的键的排列可以使常用数据更多的保留在内存中？
+
+1、2 索引名称
+	索引类似于keyname1_dir1_keyname2_dir2..._keynameN_dirN，其中kenameN代表索引的键，
+	dirN代表索引的方向，索引的键越多，就显得比较麻烦，可以使用下面这种方法显示的通过
+	ensureIndex来指定索引名字。
+	db.test.ensureIndex({},{"name":"alphabet"}),可以使用getLastError来检查索引是否成功创建或者
+	未成功创建的额原因。
+2、唯一索引
+	唯一索引的创建
+	db.test..ensureIndex({"username":1},{"unique":true}),insert并不会检查是否插入过了
+所以为了避免重复插入，需要建立唯一索引。
+注：如果没有对应的键，索引会将其作为null存储，所以，如果对某个键建立了唯一索引，但插入了多个缺少
+该索引的文档，则由于该文档包含null值而导致插入失败。
+
+explain()查看查询是否使用了所以以及其他信息，hint：强制使用某个索引
+集合名和索引名加起来不能超过127个字节，因为索引的命名空间需要占用6个字节。
+dropIndex删除索引，ensureIndex添加索引
+
+建立索引既耗时又费力，还要消耗资源，使用("background":true)让整个过程在后台执行
+db.test.ensureIndex({"username":1},{"background":true})
+
+3、地理空间索引
+db.map.ensureIndex({"gps":"2d"}),gps的值必须是一对形式的值：一个包含两个元素的数组或是包含两个键
+的内嵌文档。置于键名，是可以随意的。默认情况下，地理空间索引的假设值为~180~180，可以通过
+ensureIndex来指定，如
+db.test.ensureIndex({"light-years":"2d"},{"min":-1000,"max":1000})
+地理空间查询分两种：普通查询(find)或者使用数据库命令。
+find:db.test.find({"gps":{"$near":[40,-73]}}),默认显示100个文档
+db.test.find({"gps":{"$near":[40,-73]}}).limit(10)返回10个
+geoNear还会返回每个文档到查询点的距离，这个距离是以你插入的数据为单位的，find与$near的组合
+不会给出距离，但若是大于4MB，这是唯一的选择。
+还能找到靠近指定形状内的文档，做法就是将$near换成$within，如
+db.test.find({"gps":{"$within":{"$box:[[10,20],[15,20]]}}}),可以使用$center
+来找到圆形内部的所有点，如(参数为圆心和半径)
+db.test.find({"gps":{"within":{"$center":[[15,25],5]}}})
+如查找附近最近的咖啡店
+建立索引：db.test.ensureIndex({"location":"2d","desc":1})
+进行查询：db.test.find({"location":{"$near":[-80,30]},"desc":"coffeeshop"}).limit(1)
+
+三、聚合
+count：返回文档数量
+distinct：找出给定键的所有不同的值，使用时必须指定结合和键
+db.test.find({"distinct":"people","key":"age"})
+group:先选定分组所依据的键，然后将集合分成不同组，通过聚合每一组内的文档，产生一个结果文档。
+利用$keyf定义函数来应对各种复杂的条件分组
+
+	MapReduce
+是一个可以轻松并行化到多个服务器的聚合方法，拆分问题，再将各个部分发送到不同的机器上，
+让每台机器都完成一部分。当所有的机器都完成的时候，再把结果聚集起来形成最终完整的结果。
+MapReduce步骤：
+1、映射(map)。将操作映射到结合中的每个文档，这个操作要么无作为，要么产生一些键和X个值
+2、中间环节，叫做洗牌(shuffle)，按照键分组，并将产生的键值组成列表放到对应的键中
+3、化简(reduce)。把列表中的值化简成一个单值，这个值被返回，接着进行洗牌，知道每个键的
+列表只有一个值为止，这个值就是最后的值。
+使用mapreduce的代价是速度：group不是很快，mapreduce更慢，要作为后台任务来运行mapreduce，
+将创建一个保存结果的集合，可以对这个集合进行实时查询。
+
+	创建用户，并登陆
+> db.createUser({user:"root",pwd:"123456",roles:[{role:"dbOwner",db:"test"}]})
+Successfully added user: {
+	"user" : "root",
+	"roles" : [
+		{
+			"role" : "dbOwner",
+			"db" : "test"
+		}
+	]
+}
+	登录
+[root@redhat7 ~]# mongo -u root -p
+MongoDB shell version: 3.0.6
+Enter password: 
+connecting to: test
+Server has startup warnings: 
+2018-03-24T16:44:38.234+0800 I STORAGE  [initandlisten] 
+2018-03-24T16:44:38.234+0800 I STORAGE  [initandlisten] ** WARNING: Readahead for /data/db is set to 4096KB
+2018-03-24T16:44:38.234+0800 I STORAGE  [initandlisten] **          We suggest setting it to 256KB (512 sectors) or less
+2018-03-24T16:44:38.234+0800 I STORAGE  [initandlisten] **          http://dochub.mongodb.org/core/readahead
+2018-03-24T16:44:38.309+0800 I CONTROL  [initandlisten] ** WARNING: You are running this process as the root user, which is not recommended.
+2018-03-24T16:44:38.309+0800 I CONTROL  [initandlisten] 
+2018-03-24T16:44:38.309+0800 I CONTROL  [initandlisten] 
+2018-03-24T16:44:38.309+0800 I CONTROL  [initandlisten] ** WARNING: /sys/kernel/mm/transparent_hugepage/enabled is 'always'.
+2018-03-24T16:44:38.309+0800 I CONTROL  [initandlisten] **        We suggest setting it to 'never'
+2018-03-24T16:44:38.309+0800 I CONTROL  [initandlisten] 
+2018-03-24T16:44:38.309+0800 I CONTROL  [initandlisten] ** WARNING: /sys/kernel/mm/transparent_hugepage/defrag is 'always'.
+2018-03-24T16:44:38.309+0800 I CONTROL  [initandlisten] **        We suggest setting it to 'never'
+2018-03-24T16:44:38.309+0800 I CONTROL  [initandlisten] 
+> show collections
+cursor
+runoob
+system.indexes
+> 
+
+	fsync和锁
+这样会加上写入锁，能够灵活的备份，不用停掉服务器，但是一些写入操作会被阻塞
+> use admin
+switched to db admin
+> db.runCommand({"fsync":1,"lock":1})
+{
+	"info" : "now locked against writes, use db.fsyncUnlock() to unlock",
+	"seeAlso" : "http://dochub.mongodb.org/core/fsynccommand",
+	"ok" : 1
+}
+> db.$cmd.sys.unlock.findOne()
+{ "ok" : 1, "info" : "unlock completed" }
+> db.currentOp()
+{ "inprog" : [ ] }
+
+> db.repairDatabase()可修复运行中的数据库，也可以在启动的时候进行修复，mongod --repair
+
+	mongodb复制
+一台机器上的主从复制
+[root@redhat7 data]# mongod --dbpath /data/master --port 9001 --fork --logpath mongodb.log --master
+about to fork child process, waiting until server is ready for connections.
+forked process: 6806
+child process started successfully, parent exiting
+[root@redhat7 data]# cd master/
+[root@redhat7 master]# ls
+journal  local.0  local.1  local.ns  mongod.lock  storage.bson  _tmp
+[root@redhat7 master]# cd ..
+[root@redhat7 data]# mongod --dbpath /data/slave --port 9001 --fork --logpath mongodb_slave.log --slave --source localhost:9001
+about to fork child process, waiting until server is ready for connections.
+forked process: 6837
+child process started successfully, parent exiting
+[root@redhat7 data]# cd slave/
+[root@redhat7 slave]# ls
+journal  local.0  local.ns  mongod.lock  storage.bson  _tmp
+[root@redhat7 slave]# 
+注：从节点不会保存自己的Oplog	
+	mongodb副本集
+[root@redhat7 data]# mongod --dbpath /data/node1 --port 9001 --fork --logpath node1.log --replSet copy/redhat7:9002
+about to fork child process, waiting until server is ready for connections.
+forked process: 6991
+child process started successfully, parent exiting
+[root@redhat7 data]# mongod --dbpath /data/node2 --port 9002 --fork --logpath node2.log --replSet copy/redhat7:9001
+about to fork child process, waiting until server is ready for connections.
+forked process: 7015
+child process started successfully, parent exiting
+[root@redhat7 data]# mongod --dbpath /data/node3 --port 9003 --fork --logpath node3.log --replSet copy/redhat7:9001
+about to fork child process, waiting until server is ready for connections.
+forked process: 7031
+child process started successfully, parent exiting
+
+初始化
+> db.runCommand({"replSetInitiate":{"_id":"copy","members":[{"_id":1,"host":"redhat7:9001"},{"_id":2,"host":"redhat7:9002"}]}})
+{ "ok" : 1 }
+copy:OTHER> ls
+查看
+copy:PRIMARY> db.system.replset.find().pretty()
+{
+	"_id" : "copy",
+	"version" : 1,
+	"members" : [
+		{
+			"_id" : 1,
+			"host" : "redhat7:9001",
+			"arbiterOnly" : false,
+			"buildIndexes" : true,
+			"hidden" : false,
+			"priority" : 1,
+			"tags" : {
+				
+			},
+			"slaveDelay" : 0,
+			"votes" : 1
+		},
+		{
+			"_id" : 2,
+			"host" : "redhat7:9002",
+			"arbiterOnly" : false,
+			"buildIndexes" : true,
+			"hidden" : false,
+			"priority" : 1,
+			"tags" : {
+				
+			},
+			"slaveDelay" : 0,
+			"votes" : 1
+		}
+	],
+	"settings" : {
+		"chainingAllowed" : true,
+		"heartbeatTimeoutSecs" : 10,
+		"getLastErrorModes" : {
+			
+		},
+		"getLastErrorDefaults" : {
+			"w" : 1,
+			"wtimeout" : 0
+		}
+	}
+}
+copy:PRIMARY> 
+再添加一个节点
+copy:PRIMARY> db.system.replset.update({"_id":"copy"},{"$addToSet":{"members":{"_id":3,"host":"redhat7:9003"}}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+copy:PRIMARY> db.system.replset.find().pretty()
+{
+	"_id" : "copy",
+	"version" : 1,
+	"members" : [
+		{
+			"_id" : 1,
+			"host" : "redhat7:9001",
+			"arbiterOnly" : false,
+			"buildIndexes" : true,
+			"hidden" : false,
+			"priority" : 1,
+			"tags" : {
+				
+			},
+			"slaveDelay" : 0,
+			"votes" : 1
+		},
+		{
+			"_id" : 2,
+			"host" : "redhat7:9002",
+			"arbiterOnly" : false,
+			"buildIndexes" : true,
+			"hidden" : false,
+			"priority" : 1,
+			"tags" : {
+				
+			},
+			"slaveDelay" : 0,
+			"votes" : 1
+		},
+		{
+			"_id" : 3,
+			"host" : "redhat7:9003"
+		}
+	],
+	"settings" : {
+		"chainingAllowed" : true,
+		"heartbeatTimeoutSecs" : 10,
+		"getLastErrorModes" : {
+			
+		},
+		"getLastErrorDefaults" : {
+			"w" : 1,
+			"wtimeout" : 0
+		}
+	}
+}
+
+	分片
+分片是指将数据拆分，将其分散存在不同的的服务器上的过程。
+
+mongodb分片就是将集合切分成小块。这些快分散在若干片里面，每个片自负责总数据的一部分。
+在分片之前要运行一个路由进程，即mongos。这个路由器知道所有数据的存放位置，应用可以
+连接它来正常发送请求。
+
+	何时分片
+1、服务器的磁盘不够用了
+2、单个mongod已经不能满足写数据的性能需要了
+3、想将大量数据放在内存中提高性能
+
+	片键
+设置分片时，需要从集合里面选一个键，用其键值作为数据拆分的依据，即片键。
+如果写入负载比较高，想均匀分散负载到各个片，就选择分布均匀的片键。
+无论是片键随机跳跃还是稳定增加，片键的变化都至关重要。如果键的变化太少，
+但又想让其作为片键，可以将这个键与一个变化大的键组合起来，创建一个复核片键。
+	分片一般有三个步骤：
+1、片：片是保存子集合数据的容器
+2、mongos：路由进程，它路由所有请求，然后将结果聚合，本身并不存储数据或配置信息。
+3、配置服务器：存储了集群的配置信息：数据和片的对应关系。mongos不存放数据，
+所以需要找一个地方来存放分片配置，它从服务器获取同步数据。
+
+w:设置值来确保数据的同步性
+
+	开发环境的分片
+1、启动配置服务器
+mongod --dbpath /data/config --port 9001 --fork --logpath mongo_config.log
+2、启动mongos
+mongos --port 9002 --configdb 127.0.0.1:9001 --fork --logpath mongo_mongos.log
+3、启动普通mongod实例，即片
+mongod --dbpath /data/shard1 --port 9003 --fork --logpath mongo_shard1.log
+mongod --dbpath /data/shard2 --port 9004 --fork --logpath mongo_shard2.log
+mongod --dbpath /data/shard3 --port 9005 --fork --logpath mongo_shard3.log
+4、连接mongos，添加分片
+[root@redhat7 data]# mongo 127.0.0.1:9002/admin
+MongoDB shell version: 3.0.6
+connecting to: 127.0.0.1:9002/admin
+Server has startup warnings: 
+2018-03-24T22:43:16.610+0800 I CONTROL  ** WARNING: You are running this process as the root user, which is not recommended.
+2018-03-24T22:43:16.610+0800 I CONTROL  
+mongos> db.runCommand({"addshard":"127.0.0.1:9003",allowLocal:true})
+{ "shardAdded" : "shard0000", "ok" : 1 }
+mongos> db.runCommand({"addshard":"127.0.0.1:9004",allowLocal:true})
+{ "shardAdded" : "shard0001", "ok" : 1 }
+mongos> db.runCommand({"addshard":"127.0.0.1:9005",allowLocal:true})
+{ "shardAdded" : "shard0002", "ok" : 1 }
+5、切分数据，先允许数据库级别的切分，在允许集合级别的切分
+mongos> use admin
+switched to db admin
+mongos> db.runCommand({"enablesharding":"test"})
+{ "ok" : 1 }
+mongos> db.runCommand({"shardcollection":"test.test","key":{"_id":1}})
+{ "collectionsharded" : "test.test", "ok" : 1 }
+以上集合就按照"_id"进行分片了，再添加数据，就会依据"_id"的值自动分散到各个片上。
+	生产环境分片
+1、多个配置服务器
+2、多个mongos服务器
+3、每个片都是副本集
+4、正确设置w
+
+查看片信息
+mongos> use config
+switched to db config
+mongos> db.shards.find().pretty()
+{ "_id" : "shard0000", "host" : "127.0.0.1:9003" }
+{ "_id" : "shard0001", "host" : "127.0.0.1:9004" }
+{ "_id" : "shard0002", "host" : "127.0.0.1:9005" }
+mongos> 
+
+获得概要
+mongos> db.printShardingStatus()
+--- Sharding Status --- 
+  sharding version: {
+	"_id" : 1,
+	"minCompatibleVersion" : 5,
+	"currentVersion" : 6,
+	"clusterId" : ObjectId("5ab6640596f32a5d82c3c650")
+}
+  shards:
+	{  "_id" : "shard0000",  "host" : "127.0.0.1:9003" }
+	{  "_id" : "shard0001",  "host" : "127.0.0.1:9004" }
+	{  "_id" : "shard0002",  "host" : "127.0.0.1:9005" }
+  balancer:
+	Currently enabled:  yes
+	Currently running:  no
+	Failed balancer rounds in last 5 attempts:  0
+	Migration Results for the last 24 hours: 
+		No recent migrations
+  databases:
+	{  "_id" : "admin",  "partitioned" : false,  "primary" : "config" }
+	{  "_id" : "test",  "partitioned" : true,  "primary" : "shard0000" }
+		test.test
+			shard key: { "_id" : 1 }
+			chunks:
+				shard0000	1
+			{ "_id" : { "$minKey" : 1 } } -->> { "_id" : { "$maxKey" : 1 } } on : shard0000 Timestamp(1, 0) 
+
+mongos> 
+
+删除片
+mongos> db.runCommand({"removeshard":"127.0.0.1:9003"})
+
+	BSON
+BSON:Binary JSON.
+
+BSON是轻量级的二进制格式，能将MongoDB的所有文档表示为字节字符串。
+当要插入文档时，驱动会将文档转换成BSON，然后发往服务器，服务器会进行解码。
+    BSON的好处
+1、效率
+BSON能够有效的表示数据，占用更少的空间
+2、可遍历性
+有时候BSON牺牲了空间效率，换区更容易遍历的格式。
+3、性能
+BSON的编码和解码速度都很快。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
